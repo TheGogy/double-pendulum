@@ -34,6 +34,24 @@ typedef struct Body {
 
 
 
+float getPotential(Body *a, Body *b) {
+  float y1 = -a->l * cos(a->t);
+  float y2 = y1 - b->l * cos(b->t);
+
+  return a->m * G * y1 + b->m * G * y2;
+}
+
+float getKinetic(Body *a, Body *b) {
+  float av2 = pow(a->l * a->w, 2);
+  float bv2 = pow(b->l * b->w, 2);
+
+  float k1 = 0.5 * a->m * av2;
+  float k2 = 0.5 * b->m * (av2 + bv2 + 2 * a->l * b->l * a->w * b->w * cos(a->t - b->t));
+
+  return k1 + k2;
+}
+
+
 void updatePositions(Body *a, Body *b) {
 
 }
@@ -58,7 +76,7 @@ void draw(SDL_Renderer *renderer, Body *a, Body *b) {
   SDL_SetRenderDrawColor(renderer, a->color.r, a->color.g, a->color.b, a->color.a);
   SDL_RenderDrawLine(renderer, cx, cy, ax, ay); 
   SDL_SetRenderDrawColor(renderer, b->color.r, b->color.g, b->color.b, b->color.a);
-  SDL_RenderDrawLine(renderer, cx, cy, bx, by); 
+  SDL_RenderDrawLine(renderer, ax, ay, bx, by); 
 }
 
 int main() {
