@@ -145,17 +145,16 @@ void draw(SDL_Renderer *renderer, Body *a, Body *b, Trail *t) {
   SDL_SetRenderDrawColor(renderer, a->color.r, a->color.g, a->color.b,
                          a->color.a);
   SDL_RenderDrawLine(renderer, cx, cy, ax, ay);
-  
+
   /* Second segment */
   SDL_SetRenderDrawColor(renderer, b->color.r, b->color.g, b->color.b,
                          b->color.a);
   SDL_RenderDrawLine(renderer, ax, ay, bx, by);
-  
+
   /* Trail */
   SDL_SetRenderDrawColor(renderer, t->color.r, t->color.g, t->color.b,
                          t->color.a);
   SDL_RenderDrawPointsF(renderer, t->points, t->n_elements);
-  
 }
 
 int main() {
@@ -185,38 +184,37 @@ int main() {
   }
 
   Body a1 = {.l = 1.0,
-            .m = 1.0,
-            .t = 1.8,
-            .w = 0.0,
-            .color = {.r = 166, .g = 227, .b = 161, .a = 255}};
-
-  Body b1 = {.l = 1.0,
-            .m = 1.0,
-            .t = 1.0,
-            .w = 0.0,
-            .color = {.r = 166, .g = 227, .b = 161, .a = 255}};
-
-  Trail t1 = {.n_elements = 0,
-             .idx = 0,
-             .color = {.r = 166, .g = 227, .b = 161, .a = 255}};
-
-
-  Body a2 = {.l = 1.0,
-            .m = 1.0,
-            .t = 1.81,
-            .w = 0.0,
-            .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
-
-  Body b2 = {.l = 1.0,
-            .m = 1.0,
-            .t = 1.0,
-            .w = 0.0,
-            .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
-
-  Trail t2 = {.n_elements = 0,
-             .idx = 0,
+             .m = 1.0,
+             .t = 1.8,
+             .w = 0.0,
              .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
 
+  Body b1 = {.l = 1.0,
+             .m = 1.0,
+             .t = 1.0,
+             .w = 0.0,
+             .color = {.r = 166, .g = 227, .b = 161, .a = 255}};
+
+  Trail t1 = {.n_elements = 0,
+              .idx = 0,
+              .color = {.r = 203, .g = 166, .b = 247, .a = 255}};
+
+  // Body a2 = {.l = 1.0,
+  //            .m = 1.0,
+  //            .t = 1.81,
+  //            .w = 0.0,
+  //            .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
+  //
+  // Body b2 = {.l = 1.0,
+  //            .m = 1.0,
+  //            .t = 1.0,
+  //            .w = 0.0,
+  //            .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
+  //
+  // Trail t2 = {.n_elements = 0,
+  //             .idx = 0,
+  //             .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
+  //
   int i = 0;
   SDL_Event event;
   int quit = 0;
@@ -233,9 +231,9 @@ int main() {
     SDL_RenderClear(renderer);
 
     updatePositions(&a1, &b1);
-    updatePositions(&a2, &b2);
+    // updatePositions(&a2, &b2);
     draw(renderer, &a1, &b1, &t1);
-    draw(renderer, &a2, &b2, &t2);
+    // draw(renderer, &a2, &b2, &t2);
 
     i++;
     // Update the screen
