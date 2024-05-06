@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
 #define SCREEN_WIDTH 1000
 #define SCREEN_HEIGHT 800
@@ -45,7 +44,7 @@ typedef struct Trail {
 void appendToTrail(Trail *t, SDL_FPoint pt) {
   t->points[t->idx++] = pt;
   t->idx %= TRAIL_SIZE;
-  t->n_elements = (t->n_elements < TRAIL_SIZE) ? t->n_elements + 1 : TRAIL_SIZE;
+  t->n_elements = MIN(t->n_elements + 1, TRAIL_SIZE);
 }
 
 long double getPotential(Body *a, Body *b) {
@@ -186,21 +185,15 @@ int main() {
     return 1;
   }
 
-  SDL_Event event;
-  int quit = 0;
-
-  Uint32 totalFrameTicks = 0;
-  Uint32 totalFrames = 0;
-
   Body a = {.l = 1.0,
             .m = 1.0,
-            .t = 1.6,
+            .t = 1.8,
             .w = 0.0,
             .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
 
   Body b = {.l = 1.0,
             .m = 1.0,
-            .t = 0.0,
+            .t = 1.0,
             .w = 0.0,
             .color = {.r = 166, .g = 227, .b = 161, .a = 255}};
 
@@ -209,6 +202,8 @@ int main() {
              .color = {.r = 203, .g = 166, .b = 247, .a = 255}};
 
   int i = 0;
+  SDL_Event event;
+  int quit = 0;
 
   while (!quit) {
     while (SDL_PollEvent(&event) != 0) {
@@ -217,26 +212,12 @@ int main() {
       }
     }
 
-    totalFrames++;
-    Uint32 startTicks = SDL_GetTicks();
-    Uint64 startPerf = SDL_GetPerformanceCounter();
-
     // Clear the screen
     SDL_SetRenderDrawColor(renderer, 17, 17, 27, 255);
     SDL_RenderClear(renderer);
 
     updatePositions(&a, &b);
     draw(renderer, &a, &b, &t);
-
-    Uint32 endTicks = SDL_GetTicks();
-    Uint64 endPerf = SDL_GetPerformanceCounter();
-    Uint64 framePerf = endPerf - startPerf;
-    totalFrameTicks += endTicks - startTicks;
-
-    if (!(i % 10000)) {
-      printf("Average fps: %f || Perf: %" PRIu64 "\n",
-             1000.0f / ((float)totalFrameTicks / totalFrames), framePerf);
-    }
 
     i++;
     // Update the screen
