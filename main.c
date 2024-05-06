@@ -2,8 +2,10 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_timer.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -12,10 +14,11 @@
 
 #define SCREEN_WIDTH 1000
 #define SCREEN_HEIGHT 800
+#define TRAIL_SIZE 1024
 
 /* Constants */
-#define G 10   // Gravitational constant
-#define DT 1.0 // Time diff
+#define G 10    // Gravitational constant
+#define DT 0.01 // Time diff
 
 typedef struct Color {
   int r;
@@ -25,52 +28,72 @@ typedef struct Color {
 } Color;
 
 typedef struct Body {
-  float l;
-  float m;
-  float t;
-  float w;
+  long double l;
+  long double m;
+  long double t;
+  long double w;
   Color color;
 } Body;
 
-float getPotential(Body *a, Body *b) {
-  float y1 = -a->l * cos(a->t);
-  float y2 = y1 - b->l * cos(b->t);
+typedef struct Trail {
+  int idx;
+  int n_elements;
+  Color color;
+  SDL_FPoint points[TRAIL_SIZE];
+} Trail;
+
+void appendToTrail(Trail *t, SDL_FPoint pt) {
+  t->points[t->idx++] = pt;
+  t->idx %= TRAIL_SIZE;
+  t->n_elements = (t->n_elements < TRAIL_SIZE) ? t->n_elements + 1 : TRAIL_SIZE;
+}
+
+long double getPotential(Body *a, Body *b) {
+  long double y1 = -a->l * cosl(a->t);
+  long double y2 = y1 - b->l * cosl(b->t);
 
   return a->m * G * y1 + b->m * G * y2;
 }
 
-float getKinetic(Body *a, Body *b) {
-  float av2 = pow(a->l * a->w, 2);
-  float bv2 = pow(b->l * b->w, 2);
+long double getKinetic(Body *a, Body *b) {
+  long double av2 = pow(a->l * a->w, 2);
+  long double bv2 = pow(b->l * b->w, 2);
 
-  float k1 = 0.5 * a->m * av2;
-  float k2 = 0.5 * b->m *
-             (av2 + bv2 + 2 * a->l * b->l * a->w * b->w * cos(a->t - b->t));
+  long double k1 = 0.5 * a->m * av2;
+  long double k2 =
+      0.5 * b->m *
+      (av2 + bv2 + 2 * a->l * b->l * a->w * b->w * cosl(a->t - b->t));
 
   return k1 + k2;
 }
 
-void lagrange(Body *a, Body *b, float *k, float *y) {
-  float a1 = (b->l / a->l) * (b->m / (a->m + b->m)) * cos(y[0] - y[1]);
-  float a2 = (a->l / b->l) * cos(y[0] - y[1]);
+void lagrange(Body *a, Body *b, long double *k, long double *y) {
 
-  float f1 = -(b->l / a->l) * (b->m / (a->m + b->m)) * (y[3] * y[3]) *
-                 sin(y[0] - y[1]) - (G / a->l) * sin(y[0]);
-  float f2 = (a->l / b->l) * (a->w * a->w) * sin(y[0] - y[1]) - (G / b->l) * sin(y[1]);
+  long double b_a = (b->l / a->l);
+  long double a_b = (a->l / b->l);
 
-  float g1 = (f1 - a1 * f2) / (1 - a1 * a2);
-  float g2 = (f2 - a2 * f1) / (1 - a1 * a2);
+  long double a1 = b_a * (b->m / (a->m + b->m)) * cosl(y[0] - y[1]);
+  long double a2 = a_b * cosl(y[0] - y[1]);
 
-  k[0] = a->w;
-  k[1] = b->w;
+  long double f1 =
+      -b_a * (b->m / (a->m + b->m)) * (y[3] * y[3]) * sinl(y[0] - y[1]) -
+      (G / a->l) * sinl(y[0]);
+  long double f2 =
+      a_b * (a->w * a->w) * sinl(y[0] - y[1]) - (G / b->l) * sinl(y[1]);
+
+  long double g1 = (f1 - a1 * f2) / (1 - a1 * a2);
+  long double g2 = (f2 - a2 * f1) / (1 - a1 * a2);
+
+  k[0] = y[2];
+  k[1] = y[3];
   k[2] = g1;
   k[3] = g2;
 }
 
 void updatePositions(Body *a, Body *b) {
-  float y[4] = {a->t, a->w, b->t, b->w};
-  float k1[4], k2[4], k3[4], k4[4];
-  float tmp[4];
+  long double y[4] = {a->t, b->t, a->w, b->w};
+  long double k1[4], k2[4], k3[4], k4[4];
+  long double tmp[4];
 
   lagrange(a, b, k1, y);
 
@@ -98,29 +121,43 @@ void updatePositions(Body *a, Body *b) {
   b->w += 1.0 / 6.0 * DT * (k1[3] + 2.0 * k2[3] + 2.0 * k3[3] + k4[3]);
 }
 
-void draw(SDL_Renderer *renderer, Body *a, Body *b) {
+void draw(SDL_Renderer *renderer, Body *a, Body *b, Trail *t) {
 
   int size = 0.8 * MIN(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-  float total_len = a->l + b->l;
+  long double total_len = a->l + b->l;
 
-  float length_a = size * (a->l / total_len);
-  float length_b = size * (b->l / total_len);
+  long double length_a = size * (a->l / total_len);
+  long double length_b = size * (b->l / total_len);
 
   int cx = SCREEN_WIDTH / 2;
   int cy = SCREEN_HEIGHT / 2;
 
-  int ax = cx + (int)length_a * sin(a->t);
-  int ay = cy + (int)length_a * cos(a->t);
+  int ax = cx + (int)length_a * sinl(a->t);
+  int ay = cy + (int)length_a * cosl(a->t);
 
-  int bx = ax + (int)length_b * sin(b->t);
-  int by = ay + (int)length_b * cos(b->t);
+  int bx = ax + (int)length_b * sinl(b->t);
+  int by = ay + (int)length_b * cosl(b->t);
 
+  // Handle trail
+  SDL_FPoint tip = {.x = bx, .y = by};
+  appendToTrail(t, tip);
+
+  /* First segment */
   SDL_SetRenderDrawColor(renderer, a->color.r, a->color.g, a->color.b,
                          a->color.a);
   SDL_RenderDrawLine(renderer, cx, cy, ax, ay);
+  
+  /* Second segment */
   SDL_SetRenderDrawColor(renderer, b->color.r, b->color.g, b->color.b,
                          b->color.a);
   SDL_RenderDrawLine(renderer, ax, ay, bx, by);
+  
+  /* Trail */
+  SDL_SetRenderDrawColor(renderer, t->color.r, t->color.g, t->color.b,
+                         t->color.a);
+  SDL_RenderDrawPointsF(renderer, t->points, t->n_elements);
+  
+  SDL_RenderPresent(renderer);
 }
 
 int main() {
@@ -157,15 +194,19 @@ int main() {
 
   Body a = {.l = 1.0,
             .m = 1.0,
-            .t = 0.5,
+            .t = 1.6,
             .w = 0.0,
             .color = {.r = 243, .g = 139, .b = 168, .a = 255}};
 
   Body b = {.l = 1.0,
             .m = 1.0,
-            .t = 0.5,
+            .t = 0.0,
             .w = 0.0,
             .color = {.r = 166, .g = 227, .b = 161, .a = 255}};
+
+  Trail t = {.n_elements = 0,
+             .idx = 0,
+             .color = {.r = 203, .g = 166, .b = 247, .a = 255}};
 
   int i = 0;
 
@@ -185,7 +226,7 @@ int main() {
     SDL_RenderClear(renderer);
 
     updatePositions(&a, &b);
-    draw(renderer, &a, &b);
+    draw(renderer, &a, &b, &t);
 
     Uint32 endTicks = SDL_GetTicks();
     Uint64 endPerf = SDL_GetPerformanceCounter();
@@ -199,7 +240,7 @@ int main() {
 
     i++;
     // Update the screen
-    SDL_RenderPresent(renderer);
+    SDL_Delay(10);
   }
 
   // Cleanup
