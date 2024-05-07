@@ -11,13 +11,30 @@
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
+/* Constants */
 #define SCREEN_WIDTH 1000
 #define SCREEN_HEIGHT 800
 #define TRAIL_SIZE 1024
 
-/* Constants */
-#define G 10    // Gravitational constant
-#define DT 0.01 // Time diff
+/* Acceleration due to gravity (m/s^2)
+ * https://nssdc.gsfc.nasa.gov/planetary/
+ * Uncomment one of these
+ * */
+// #define G 274.0    // Sun gravity
+// #define G 3.70     // Mercury gravity
+// #define G 8.87     // Venus gravity
+#define G 9.78     // Earth
+// #define G 3.73     // Mars 
+// #define G 23.12    // Jupiter
+// #define G 8.96     // Saturn
+// #define G 8.69     // Uranus
+// #define G 11.00    // Neptune
+// #define G 0.62     // Pluto
+
+// #define G 1.625    // Moon 
+
+
+#define DT 0.01   // Time diff
 
 typedef struct Color {
   int r;
