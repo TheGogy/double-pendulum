@@ -70,18 +70,19 @@ void lagrange(Body *a, Body *b, long double *k, long double *y) {
 
   long double b_a = (b->l / a->l);
   long double a_b = (a->l / b->l);
+  long double total_mass = (a->m + b->m);
 
-  long double a1 = b_a * (b->m / (a->m + b->m)) * cosl(y[0] - y[1]);
-  long double a2 = a_b * cosl(y[0] - y[1]);
+  long double accel_1 = b_a * (b->m / total_mass) * cosl(y[0] - y[1]);
+  long double accel_2 = a_b * cosl(y[0] - y[1]);
 
-  long double f1 =
-      -b_a * (b->m / (a->m + b->m)) * (y[3] * y[3]) * sinl(y[0] - y[1]) -
+  long double force_1 =
+      -b_a * (b->m / total_mass) * (y[3] * y[3]) * sinl(y[0] - y[1]) -
       (G / a->l) * sinl(y[0]);
-  long double f2 =
+  long double force_2 =
       a_b * (a->w * a->w) * sinl(y[0] - y[1]) - (G / b->l) * sinl(y[1]);
 
-  long double g1 = (f1 - a1 * f2) / (1 - a1 * a2);
-  long double g2 = (f2 - a2 * f1) / (1 - a1 * a2);
+  long double g1 = (force_1 - accel_1 * force_2) / (1 - accel_1 * accel_2);
+  long double g2 = (force_2 - accel_2 * force_1) / (1 - accel_1 * accel_2);
 
   k[0] = y[2];
   k[1] = y[3];
@@ -168,7 +169,7 @@ int main() {
   }
 
   // Create window
-  window = SDL_CreateWindow("Three Body Problem", SDL_WINDOWPOS_CENTERED,
+  window = SDL_CreateWindow("Double Pendulum", SDL_WINDOWPOS_CENTERED,
                             SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT,
                             SDL_WINDOW_SHOWN);
   if (window == NULL) {
